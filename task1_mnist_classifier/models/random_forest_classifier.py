@@ -1,11 +1,15 @@
-from task1_mnist_classifier.mnist_classifier_interface import MnistClassifierInterface
+from mnist_classifier_interface import MnistClassifierInterface
+from sklearn.ensemble import RandomForestClassifier as SklearnRandomForestClassifier
 
 class RandomForestClassifier(MnistClassifierInterface):
-    def __init__(self, model):
-        self.model = model
+    def __init__(self, n_estimators=100, random_state=42):
+        self.model = SklearnRandomForestClassifier(
+            n_estimators=n_estimators, 
+            random_state=random_state
+        )
 
     def train(self, train_data, train_labels):
-        pass
+        self.model.fit(train_data, train_labels)
 
     def predict(self, test_data):
-        pass
+        return self.model.predict(test_data)
