@@ -3,3 +3,6 @@
 /task1/models/__pycache__/
 /task2/__pycache__/
 /task2/dataset
+/task2/venv
+/task2/ner_model
+/task2/ner/data
