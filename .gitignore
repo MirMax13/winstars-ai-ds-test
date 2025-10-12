@@ -6,3 +6,4 @@
 /task2/venv
 /task2/ner_model
 /task2/ner/data
+/task2/cnn/__pycache__/
