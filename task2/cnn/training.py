@@ -4,7 +4,8 @@ import argparse
 
 def main():
     parser = argparse.ArgumentParser(description="Train CNN model for animal image classification.")
-    parser.add_argument("--dataset_dir", type=str, required=True, help="Path to dataset directory.")
+    parser.add_argument("--train_dir", type=str, required=True, help="Path to training data directory.")
+    parser.add_argument("--test_dir", type=str, required=True, help="Path to test data directory.")
     parser.add_argument("--epochs", type=int, default=10, help="Number of epochs for training.")
     parser.add_argument("--batch_size", type=int, default=32, help="Batch size.")
     parser.add_argument("--img_size", type=int, default=128, help="Image size for resizing.")
@@ -16,25 +17,19 @@ def main():
     BATCH_SIZE = args.batch_size
 
     # --- Generators ---
-    train_gen = ImageDataGenerator(
-        rescale=1.0 / 255,
-        rotation_range=20,
-        horizontal_flip=True,
-        validation_split=0.2
-    )
+    train_gen = ImageDataGenerator(rescale=1./255, rotation_range=20, horizontal_flip=True)
+    test_gen = ImageDataGenerator(rescale=1./255)
 
     train_ds = train_gen.flow_from_directory(
-        args.dataset_dir,
-        target_size=(IMG_SIZE, IMG_SIZE),
-        batch_size=BATCH_SIZE,
-        subset="training"
+    args.train_dir,
+    target_size=(IMG_SIZE, IMG_SIZE),
+    batch_size=BATCH_SIZE
     )
 
-    val_ds = train_gen.flow_from_directory(
-        args.train_dir,
+    val_ds = test_gen.flow_from_directory(
+        args.test_dir,
         target_size=(IMG_SIZE, IMG_SIZE),
-        batch_size=BATCH_SIZE,
-        subset="validation"
+        batch_size=BATCH_SIZE
     )
     # --- Model ---
     if args.load_model:
