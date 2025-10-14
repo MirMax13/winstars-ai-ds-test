@@ -1,5 +1,7 @@
 from transformers import AutoTokenizer, AutoModelForTokenClassification, TrainingArguments, Trainer, DataCollatorForTokenClassification
-from datasets import load_dataset
+from datasets import load_dataset, Dataset
+import json
+import argparse
 
 labels = ["O", "B-ANIMAL", "I-ANIMAL"]
 label2id = {l: i for i, l in enumerate(labels)}
@@ -9,7 +11,15 @@ model_name = "distilbert-base-cased"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForTokenClassification.from_pretrained(model_name, num_labels=len(labels), id2label=id2label, label2id=label2id)
 
-dataset = load_dataset("json", data_files="ner/data/ner_dataset.json")["train"]
+parser = argparse.ArgumentParser()
+parser.add_argument('--data_path', type=str, default='ner/data/ner_dataset.json', help='Path to the NER dataset JSON file')
+parser.add_argument('--output_dir', type=str, default='./ner_model', help='Directory to save the trained model')
+parser.add_argument('--epochs', type=int, default=3, help='Number of training epochs')
+parser.add_argument('--batch_size', type=int, default=8, help='Training batch size')
+parser.add_argument('--logs_dir', type=str, default='./logs', help='Directory for training logs')
+args = parser.parse_args()
+
+dataset = load_dataset("json", data_files=args.data_path)["train"]
 
 def tokenize_and_align_labels(example):
     tokenized_inputs = tokenizer(example["tokens"], truncation=True, is_split_into_words=True)
@@ -28,10 +38,10 @@ tokenized_datasets = dataset.map(tokenize_and_align_labels)
 data_collator = DataCollatorForTokenClassification(tokenizer=tokenizer)
 
 args = TrainingArguments(
-    output_dir="./ner_model",
-    per_device_train_batch_size=8,
-    num_train_epochs=3,
-    logging_dir="./logs",
+    output_dir=args.output_dir,
+    per_device_train_batch_size=args.batch_size,
+    num_train_epochs=args.epochs,
+    logging_dir=args.logs_dir,
 )
 
 trainer = Trainer(
@@ -43,7 +53,7 @@ trainer = Trainer(
 
 trainer.train()
 
-model.save_pretrained("./ner_model")
-tokenizer.save_pretrained("./ner_model")
+model.save_pretrained(args.output_dir)
+tokenizer.save_pretrained(args.output_dir)
 
 print("✅ NER model trained and saved.")
