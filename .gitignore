@@ -7,3 +7,6 @@
 /task2/ner/model
 /task2/ner/data
 /task2/cnn/__pycache__/
+/task2/pipeline/__pycache__/
+/task2/ner/__pycache__/
+*.pth
