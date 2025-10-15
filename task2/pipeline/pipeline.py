@@ -7,10 +7,14 @@ from transformers import AutoTokenizer, AutoModelForTokenClassification
 from PIL import Image
 import os
 
-# Paths
-NER_MODEL_PATH = "./ner/model"
-IMG_MODEL_PATH = "./cnn/resnet_model.pth"
-IMG_STATS_PATH = "./cnn/resnet_model_stats.pth"
+# Get the directory where this script is located
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
+
+# Paths - use absolute paths relative to project structure
+NER_MODEL_PATH = os.path.join(PROJECT_ROOT, "ner", "model")
+IMG_MODEL_PATH = os.path.join(PROJECT_ROOT, "cnn", "resnet_model.pth")
+IMG_STATS_PATH = os.path.join(PROJECT_ROOT, "cnn", "resnet_model_stats.pth")
 
 # Italian to English mapping
 ITALIAN_TO_ENGLISH = {
@@ -126,7 +130,14 @@ def check_statement(text, image_path):
         return None
 
     text_lower = text.lower()
-    is_negated = any(word in text_lower for word in ["not", "no", "isn't", "aren't", "doesn't"])
+    # Extended negation detection based on training templates
+    negation_patterns = [
+        "not", "no", "isn't", "aren't", "doesn't", "don't",
+        "lacks", "lack", "without",
+        "can't find", "cannot find",
+        "never", "none"
+    ]
+    is_negated = any(pattern in text_lower for pattern in negation_patterns)
 
     if is_negated:
         result = text_animal != image_animal
@@ -142,7 +153,7 @@ def check_statement(text, image_path):
 
 if __name__ == "__main__":
     text_input = "It's not a cow."
-    image_path = "./raw-img/gatto/1.jpeg"
+    image_path = os.path.join(PROJECT_ROOT, "raw-img", "gatto", "1.jpeg")
     
     if os.path.exists(image_path):
         check_statement(text_input, image_path)
