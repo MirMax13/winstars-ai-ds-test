@@ -1,3 +1,23 @@
+"""
+Animal Detection Pipeline
+
+This module combines NER (Named Entity Recognition) and Image Classification
+to verify if a text statement matches the content of an image.
+
+The pipeline:
+1. Extracts animal mentions from text using a fine-tuned DistilBERT model
+2. Classifies the image using a ResNet50 model
+3. Compares the results, handling negations in the text
+
+Usage:
+    Command line:
+        python pipeline.py --text "There is a dog" --image path/to/image.jpg
+    
+    Programmatic:
+        from pipeline import check_statement
+        result = check_statement("I see a cat", "cat_image.jpg")
+"""
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -18,7 +38,7 @@ NER_MODEL_PATH = os.path.join(PROJECT_ROOT, "ner", "model")
 IMG_MODEL_PATH = os.path.join(PROJECT_ROOT, "cnn", "resnet_model.pth")
 IMG_STATS_PATH = os.path.join(PROJECT_ROOT, "cnn", "resnet_model_stats.pth")
 
-# Italian to English mapping
+# Italian to English mapping (dataset uses Italian folder names)
 ITALIAN_TO_ENGLISH = {
     "cane": "dog",
     "cavallo": "horse",
@@ -43,6 +63,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 class ConvertToRGB:
+    """Custom transform to ensure all images are in RGB format."""
     def __call__(self, img):
         if img.mode != "RGB":
             return img.convert("RGB")
@@ -50,6 +71,15 @@ class ConvertToRGB:
 
 
 def create_resnet_model(num_classes=10):
+    """
+    Create a ResNet50 model with custom classifier head.
+    
+    Args:
+        num_classes (int): Number of output classes (default: 10)
+        
+    Returns:
+        PyTorch model ready for loading weights
+    """
     model = torchvision.models.resnet50(weights=None)
     in_features = model.fc.in_features
     classifier = nn.Sequential(
@@ -94,6 +124,15 @@ print(f"Device: {device}")
 
 
 def extract_animal_from_text(text: str):
+    """
+    Extract animal mention from text using NER model.
+    
+    Args:
+        text (str): Input text that may contain an animal mention
+        
+    Returns:
+        str or None: The detected animal name, or None if no animal found
+    """
     inputs = ner_tokenizer(text, return_tensors="pt")
     outputs = ner_model(**inputs)
     predictions = torch.argmax(outputs.logits, dim=2)
@@ -102,20 +141,32 @@ def extract_animal_from_text(text: str):
     animal = None
     for token, label_id in zip(tokens, predictions[0].numpy()):
         label = ner_model.config.id2label[label_id]
-        if label == "B-ANIMAL":
-            animal = token.replace("##", "")
+        if label == "B-ANIMAL":  # Beginning of an animal entity
+            animal = token.replace("##", "")  # Remove BERT subword marker
             break
     return animal
 
 
 def classify_image(image_path):
+    """
+    Classify the animal in an image.
+    
+    Args:
+        image_path (str): Path to the image file
+        
+    Returns:
+        str: Predicted animal class name (in English)
+    """
+    # Load and preprocess image
     img = Image.open(image_path)
     img_tensor = img_transform(img).unsqueeze(0).to(device)
     
+    # Run inference
     with torch.no_grad():
         outputs = img_model(img_tensor)
         probabilities = F.softmax(outputs, dim=1)
     
+    # Get prediction and convert to English
     pred_idx = torch.argmax(probabilities, dim=1).item()
     italian_class = class_names[pred_idx]
     english_class = ITALIAN_TO_ENGLISH.get(italian_class, italian_class)
@@ -124,6 +175,29 @@ def classify_image(image_path):
 
 
 def check_statement(text, image_path):
+    """
+    Verify if a text statement matches the image content.
+    
+    This function combines NER and image classification to determine if the
+    statement about an animal is correct. It handles negations in the text.
+    
+    Args:
+        text (str): Text statement (e.g., "There is a dog", "This is not a cat")
+        image_path (str): Path to the image file
+        
+    Returns:
+        bool or None: True if statement matches image, False if not, None if no animal in text
+        
+    Examples:
+        >>> check_statement("I see a dog", "dog.jpg")  # Returns True if image contains dog
+        >>> check_statement("This is not a cat", "dog.jpg")  # Returns True (correct negation)
+        >>> check_statement("No elephants here", "elephant.jpg")  # Returns False
+    """
+    # Extract animal from text and classify image
+    text_animal = extract_animal_from_text(text)
+    image_animal = classify_image(image_path)
+
+    # Extract animal from text and classify image
     text_animal = extract_animal_from_text(text)
     image_animal = classify_image(image_path)
 
@@ -131,6 +205,7 @@ def check_statement(text, image_path):
         print("No animal found in text.")
         return None
 
+    # Check for negation patterns in the text
     text_lower = text.lower()
     # Extended negation detection based on training templates
     negation_patterns = [
@@ -141,11 +216,15 @@ def check_statement(text, image_path):
     ]
     is_negated = any(pattern in text_lower for pattern in negation_patterns)
 
+    # Determine result based on negation
     if is_negated:
+        # If negated, statement is true when animals DON'T match
         result = text_animal != image_animal
     else:
+        # If positive, statement is true when animals DO match
         result = text_animal == image_animal
 
+    # Print diagnostic information
     print(f"Text animal: {text_animal}")
     print(f"Image animal: {image_animal}")
     print(f"Negation: {is_negated}")
@@ -154,6 +233,7 @@ def check_statement(text, image_path):
 
 
 if __name__ == "__main__":
+    # Command-line interface for the pipeline
     parser = argparse.ArgumentParser(description="Animal Detection Pipeline - Verify if text statement matches image content")
     parser.add_argument("--text", type=str, required=True, help="Text statement about the animal (e.g., 'There is a dog in the picture')")
     parser.add_argument("--image", type=str, required=True, help="Path to the image file")

@@ -1,3 +1,21 @@
+"""
+Animal Image Classification Training Script
+
+This script trains a ResNet50 model for animal classification using transfer learning.
+It includes data augmentation, early stopping, and automatic dataset statistics calculation.
+
+Features:
+- Pre-trained ResNet50 with custom classifier head
+- Automatic mean/std calculation from dataset
+- Data augmentation (random crop, flip, rotation)
+- Early stopping to prevent overfitting
+- Learning rate scheduling
+- Saves best model checkpoint and dataset statistics
+
+Usage:
+    python training.py --data_dir ./raw-img --epochs 50 --batch_size 32
+"""
+
 import os
 import argparse
 import torch
@@ -23,6 +41,19 @@ class ConvertToRGB:
 
 
 def calculate_dataset_stats(data_dir, batch_size=32):
+    """
+    Calculate mean and standard deviation for dataset normalization.
+    
+    This function computes the per-channel mean and std across all images,
+    which is essential for proper normalization during training.
+    
+    Args:
+        data_dir (str): Path to the dataset directory
+        batch_size (int): Batch size for loading images
+        
+    Returns:
+        tuple: (mean, std) as torch tensors of shape [3] for RGB channels
+    """
     print("Calculating dataset statistics...")
     
     transform_basic = transforms.Compose([
@@ -49,6 +80,24 @@ def calculate_dataset_stats(data_dir, batch_size=32):
 
 
 def get_data_loaders(data_dir, batch_size=32, train_split=0.8, seed=42):
+    """
+    Create training and validation data loaders with augmentation.
+    
+    This function:
+    1. Calculates dataset statistics for normalization
+    2. Applies data augmentation for training
+    3. Splits dataset into train/validation sets
+    4. Creates PyTorch DataLoaders
+    
+    Args:
+        data_dir (str): Path to dataset directory
+        batch_size (int): Batch size for training
+        train_split (float): Fraction of data for training (default: 0.8)
+        seed (int): Random seed for reproducible splits (default: 42)
+        
+    Returns:
+        tuple: (train_loader, val_loader, class_names, mean, std)
+    """
     # Calculate dataset statistics
     mean, std = calculate_dataset_stats(data_dir, batch_size)
     
