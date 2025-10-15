@@ -2,8 +2,8 @@
 /task1/__pycache__/
 /task1/models/__pycache__/
 /task2/__pycache__/
-/task2/dataset
+/task2/raw-img
 /task2/venv
-/task2/ner_model
+/task2/ner/model
 /task2/ner/data
 /task2/cnn/__pycache__/
