@@ -73,8 +73,8 @@ def load_dataset_stats(checkpoint_path):
         print(f"Dataset statistics loaded from {stats_path}")
     else:
         print(f"Warning: Stats file not found, using default normalization")
-        mean = torch.tensor([0.5, 0.5, 0.5])
-        std = torch.tensor([0.5, 0.5, 0.5])
+        mean = torch.tensor([0.5177, 0.5003, 0.4125])
+        std = torch.tensor([0.2659, 0.2610, 0.2785])
         class_names = sorted(ITALIAN_TO_ENGLISH.keys())
     
     return mean, std, class_names
