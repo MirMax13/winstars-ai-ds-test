@@ -6,6 +6,8 @@ from torchvision import transforms
 from transformers import AutoTokenizer, AutoModelForTokenClassification
 from PIL import Image
 import os
+import argparse
+import sys
 
 # Get the directory where this script is located
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -152,10 +154,24 @@ def check_statement(text, image_path):
 
 
 if __name__ == "__main__":
-    text_input = "It's not a cow."
-    image_path = os.path.join(PROJECT_ROOT, "raw-img", "gatto", "1.jpeg")
+    parser = argparse.ArgumentParser(description="Animal Detection Pipeline - Verify if text statement matches image content")
+    parser.add_argument("--text", type=str, required=True, help="Text statement about the animal (e.g., 'There is a dog in the picture')")
+    parser.add_argument("--image", type=str, required=True, help="Path to the image file")
     
-    if os.path.exists(image_path):
-        check_statement(text_input, image_path)
+    args = parser.parse_args()
+    
+    # Check if image exists
+    if not os.path.exists(args.image):
+        print(f"Error: Image file not found: {args.image}")
+        sys.exit(1)
+    
+    # Run the pipeline
+    result = check_statement(args.text, args.image)
+    
+    # Print final result
+    if result is None:
+        print("\nFinal Result: Unable to verify (no animal found in text)")
+        sys.exit(2)
     else:
-        print(f"Image not found: {image_path}")
+        print(f"\nFinal Result: {result}")
+        sys.exit(0 if result else 1)
