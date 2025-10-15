@@ -103,18 +103,33 @@ python train_ner.py --output_dir ./ner_model --epochs 3
 ```powershell
 cd pipeline
 
-# Verify statement with text and image
-python pipeline.py
+# Verify positive statement
+python pipeline.py --text "There is a dog in the picture" --image ../raw-img/cane/1.jpeg
+
+# Verify negative statement
+python pipeline.py --text "This is not a cow" --image ../raw-img/gatto/1.jpeg
+
+# Complex statement
+python pipeline.py --text "I can see a beautiful butterfly" --image ../raw-img/farfalla/1.jpeg
 ```
+
+**Pipeline Arguments:**
+- `--text`: Text statement about the animal (required)
+- `--image`: Path to the image file (required)
+
+**Output:**
+- Prints: detected animal from text, classified animal from image, negation status
+- Returns: `True` if statement matches image, `False` otherwise
+- Exit code: 0 (success/true), 1 (false), 2 (no animal in text)
 
 The pipeline combines NER and image classification to verify if a text statement matches the image content. It handles negations automatically.
 
-**Example in code:**
+**Programmatic Usage:**
 ```python
 from pipeline import check_statement
 
 text = "I see a dog"
-image_path = "../cnn/raw-img/cane/1.jpeg"
+image_path = "../raw-img/cane/1.jpeg"
 result = check_statement(text, image_path)  # Returns True or False
 ```
 
@@ -177,24 +192,27 @@ python cnn/training.py --data_dir ./cnn/raw-img --checkpoint best_model.pth
 ### Inference Examples
 
 ```powershell
-# Basic prediction
+# Basic image prediction
 python cnn/inference_image.py --model_path cnn/resnet_model.pth --image_path test.jpg
 
 # Save to JSON
 python cnn/inference_image.py --model_path cnn/resnet_model.pth --image_path test.jpg --output result.json
+
+# NER inference
+python ner/inference_ner.py --text "I saw a beautiful elephant"
 ```
 
-### Pipeline Integration
+### Pipeline Examples
 
-```python
-from pipeline import verify_statement
+```powershell
+# Verify positive statement
+python pipeline/pipeline.py --text "There is a cat" --image raw-img/gatto/1.jpeg
 
-# Verify animal statement
-result = verify_statement(
-    text="There's a beautiful butterfly",
-    image_path="images/butterfly.jpg"
-)
-print(f"Statement is {result}")  # True or False
+# Verify negative statement
+python pipeline/pipeline.py --text "This is not a dog" --image raw-img/gatto/1.jpeg
+
+# Test with different animals
+python pipeline/pipeline.py --text "I see a butterfly" --image raw-img/farfalla/1.jpeg
 ```
 
 ## Troubleshooting
